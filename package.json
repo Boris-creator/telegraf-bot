@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "argon2": "^0.28.5",
     "dotenv": "^16.0.0",
     "mysql2": "^2.3.3",
     "sequelize": "^6.19.0",

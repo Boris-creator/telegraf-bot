@@ -1,6 +1,9 @@
 const { getCBData, getMessage } = require("telegraf-router");
 const { Markup } = require("telegraf");
 const controllers = require("./methods");
+const argon2 = require("argon2");
+const { sequelize } = require("./sequelize");
+const { QueryTypes} = require("sequelize")
 const registration_steps = [
   {
     title: "ogrn",
@@ -9,7 +12,7 @@ const registration_steps = [
   },
   {
     title: "inn",
-    allowNull: true,
+    allowNull: "ogrn",
     message: "Введите ИНН",
   },
   {
@@ -19,17 +22,17 @@ const registration_steps = [
   },
   {
     title: "mail",
-    allowNull: false,
+    allowNull: "phone",
     message: "Введите почту организации",
   },
   {
     title: "phone_personal",
-    allowNull: false,
+    allowNull: true,
     message: "Введите контактный телефон",
   },
   {
     title: "mail_personal",
-    allowNull: false,
+    allowNull: "phone_personal",
     message: "Введите контактную почту",
   },
   {
@@ -49,7 +52,7 @@ const register_routes = [
       {
         path: "",
         action: async function RegisterScene({ ctx, params, router }) {
-          await router.redirect("/form/register/inn", ctx);
+          await router.redirect("/form/register/ogrn", ctx);
           return true;
         },
       },
@@ -63,9 +66,16 @@ const register_routes = [
             return;
           }
           const answer = getMessage(ctx).text;
-          if (
-            ["Отменить регистрацию", "Назад", "Пропустить"].includes(answer)
-          ) {
+          if (answer == "Отменить регистрацию") {
+            await router.redirect("/form/register/cancel", ctx);
+            return;
+          }
+          if (answer == "Назад") {
+            await router.redirect("/form/register/back", ctx);
+            return;
+          }
+          if (answer == "Пропустить") {
+            await router.redirect("/form/register/omit", ctx);
             return;
           }
           const step = ctx.session.step;
@@ -101,7 +111,8 @@ const register_routes = [
           if (stepIndex !== 0) {
             keyboard.unshift(["Назад"]);
           }
-          if (allowNull) {
+          console.log(ctx.session[allowNull]);
+          if (allowNull === true || ctx.session[allowNull]) {
             keyboard.unshift([Markup.button.callback("Пропустить", "")]);
           }
           await ctx.reply(message, {
@@ -148,8 +159,35 @@ const register_routes = [
       {
         path: "/submit",
         action: async function ({ ctx, params, router }) {
-          controllers.addUser({ ...ctx.session, verified: false });
-          router.redirect("/client", ctx);
+          const {
+            inn,
+            ogrn,
+            phone,
+            mail,
+            phone_personal,
+            mail_personal,
+            fio,
+            password,
+          } = ctx.session;
+          const result = await controllers.addUser({
+            inn,
+            ogrn,
+            phone,
+            mail,
+            phone_personal,
+            mail_personal,
+            fio,
+            password,
+            verified: false,
+          });
+          console.log(88888, result)
+          if (result) {
+            ctx.session.userId = result.id;
+            router.redirect("/client", ctx);
+          } else {
+            await ctx.reply("Недостаточно информации или некорректные данные");
+            router.redirect("/select-action", ctx);
+          }
         },
       },
     ],
@@ -161,7 +199,7 @@ const login_routes = [
       {
         path: "",
         action: async function ({ ctx }) {
-          await ctx.reply("Введите Email организации");
+          await ctx.reply("Введите Email или телефон организации");
           return true;
         },
       },
@@ -174,12 +212,22 @@ const login_routes = [
             await ctx.reply("Введите пароль");
           } else if (ctx.session.login_password == null) {
             ctx.session.login_password = answer;
-            const user = await controllers.getUserData({
-              mail: ctx.session.login_email,
-              password: ctx.session.login_password,
-            });
+            let user = await sequelize.query(`SELECT * FROM clients WHERE mail = '${ctx.session.login_email}' OR phone = '${ctx.session.login_phone}'`,
+            {
+              type: QueryTypes.SELECT
+            })
+            if (user[0]) {
+              const password_correct = await argon2.verify(
+                user[0].password,
+                ctx.session.login_password
+              );
+              if (!password_correct) {
+                user = [];
+              }
+            }
             ctx.session.login_email = null;
             ctx.session.login_password = null;
+            [user] = user;
             if (user) {
               ctx.session.userId = user.id;
               ctx.session.fio = user.fio;
@@ -213,6 +261,16 @@ const client_routes = [
             },
           });
           return true;
+        },
+      },
+      {
+        path: "/message",
+        action: async ({ ctx, router }) => {
+          if (ctx.update.message.text == "Выйти") {
+            delete ctx.session.fio;
+            delete ctx.session.userId;
+            await router.redirect("/select-action", ctx);
+          }
         },
       },
       {
@@ -274,12 +332,12 @@ const routes = [
   {
     path: "start",
     action: async function StartScene({ ctx, params, router }) {
-      await router.redirect("select-action", ctx);
+      await router.redirect("/select-action", ctx);
       return true;
     },
   },
   {
-    path: "select-action",
+    path: "/select-action",
     children: [
       {
         path: "",
@@ -294,6 +352,17 @@ const routes = [
             },
           });
           return true;
+        },
+      },
+      {
+        path: "/message",
+        action: async function ({ ctx, params, router }) {
+          if (ctx.update.message.text == "Зарегистрироваться") {
+            await router.redirect("/form/register", ctx);
+          }
+          if (ctx.update.message.text == "Войти") {
+            await router.redirect("/form/login", ctx);
+          }
         },
       },
     ],

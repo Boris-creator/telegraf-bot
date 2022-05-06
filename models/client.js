@@ -24,11 +24,11 @@ module.exports = {
   },
   phone_personal: {
     type: Sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   mail_personal: {
     type: Sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   fio: {
     type: Sequelize.STRING,
