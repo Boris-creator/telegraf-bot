@@ -8,7 +8,11 @@ module.exports = {
   },
   mail: {
     type: Sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
+  },
+  phone: {
+    type: Sequelize.STRING,
+    allowNull: true,
   },
   password: {
     type: Sequelize.STRING,

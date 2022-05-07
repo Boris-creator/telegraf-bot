@@ -1,3 +1,4 @@
 const addUser = require("./addUser"),
-getUserData = require("./getUserData");
-module.exports = {addUser, getUserData}
+getUserData = require("./getUserData"),
+changeUserData = require("./changeUserData");
+module.exports = {addUser, getUserData, changeUserData}

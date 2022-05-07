@@ -1,17 +1,7 @@
 const { Client, Collaborator } = require("../sequelize.js");
 const argon2 = require("argon2");
+const rgxps = require("../validation")
 async function validate(data) {
-  const rgxps = {
-    inn: /^\d{10}(\d{2})?$/,
-    ogrn: /^\d{13}$/,
-    phone: /^\+?[\d\-]+$/,
-    mail: /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/,
-    phone_personal: /^\+?[\d\-]+$/,
-    mail_personal:
-      /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/,
-    fio: /(\S\s?){3}/,
-    password: /\S{4}/,
-  };
   if (data.inn == null && data.ogrn == null) {
     return false;
   }
@@ -26,7 +16,7 @@ async function validate(data) {
   }
   for (let key in data) {
     if (data[key] && !rgxps[key].test(data[key])) {
-      return false;
+      //return false;
     }
   }
   const { mail, phone } = data;
