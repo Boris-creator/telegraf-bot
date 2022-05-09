@@ -23,7 +23,7 @@ const startScreen = async ({ ctx }) => {
   });
 }
 
-const authRedirect = async ({ ctx, router }) => {
+const startScreenHandler = async ({ ctx, router }) => {
   if (ctx.update.message.text === 'Зарегистрироваться') {
     await router.redirect('/form/register', ctx);
   }
@@ -32,4 +32,4 @@ const authRedirect = async ({ ctx, router }) => {
   }
 }
 
-module.exports = { start, startScreen, authRedirect }
+module.exports = { start, startScreen, startScreenHandler }

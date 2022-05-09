@@ -1,4 +1,4 @@
-const { start, startScreen, authRedirect } = require('../controllers/baseController')
+const { start, startScreen, startScreenHandler } = require('../controllers/baseController')
 const { indexRegister, registerRedirectStep, registerStep, cancelRegister, backRegister, omitRegister,
   submitRegister } = require('../controllers/registerController')
 const { indexLogin, handlerLogin } = require('../controllers/loginController')
@@ -13,7 +13,7 @@ const routes = [
   { path: "/start_screen",
     children: [
       { path: "", action: startScreen },
-      { path: "/auth_redirect", action: authRedirect },
+      { path: "/message", action: startScreenHandler },
     ]
   },
   {
