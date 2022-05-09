@@ -1,4 +1,4 @@
-const { Telegraf, Markup } = require("telegraf");
+const { Telegraf } = require("telegraf");
 const { Router } = require("telegraf-router");
 const addCollaborators = require("./methods/addCollaborator")
 
@@ -10,7 +10,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.use(new LocalSession({}).middleware());
 const router = new Router({
   bot,
-  routes: require("./router.js"),
+  routes: require("./router"),
   errorCb: ({ ctx }) => {
       console.log(`Error, support: @name`);
   }
