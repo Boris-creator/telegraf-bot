@@ -1,5 +1,6 @@
 const { Telegraf, Markup } = require("telegraf");
 const { Router } = require("telegraf-router");
+const addCollaborators = require("./methods/addCollaborator")
 
 const LocalSession = require("telegraf-session-local");
 const { sequelize } = require("./sequelize.js");
@@ -17,6 +18,7 @@ const router = new Router({
 
 async function main() {
   await sequelize.sync();
+  await addCollaborators();
   bot.launch();
 }
 main();

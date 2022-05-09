@@ -4,7 +4,9 @@ const { indexRegister, registerRedirectStep, registerStep, cancelRegister, backR
 const { indexLogin, handlerLogin } = require('../controllers/loginController')
 const { indexClient, handlerClient, clientContactsIndex, clientContactsHandler, clientContactsChangeIndex,
   clientContactsChangeHandler } = require('../controllers/clientController')
-const { indexAdmin } = require('../controllers/adminController')
+const { indexAdmin, handlerAdmin, adminUnverifiedIndex, adminUnverifiedHandler,
+  adminUnverifiedVerifyIndex, adminUnverifiedVerifyHandler, adminUnverifiedDeleteIndex,
+  adminUnverifiedDeleteHandler } = require('../controllers/adminController')
 
 const routes = [
   { path: "start", action: start },
@@ -60,7 +62,28 @@ const routes = [
   {
     path: "/admin",
     children: [
-      { path: '', action: indexAdmin  }
+      { path: '', action: indexAdmin  },
+      { path: '/message', action: handlerAdmin },
+      { path: '/unverified',
+        children: [
+          { path: '', action: adminUnverifiedIndex },
+          { path: '/message', action: adminUnverifiedHandler },
+          { path: '/verify',
+            children: [
+              { path: '', action: adminUnverifiedVerifyIndex },
+              { path: '/message', action: adminUnverifiedVerifyHandler }
+            ]
+          },
+          { path: '/delete',
+            children: [
+              { path: '', action: adminUnverifiedDeleteIndex },
+              { path: '/message', action: adminUnverifiedDeleteHandler }
+            ]
+          }
+        ]
+      }
     ],
   },
 ]
+
+module.exports = routes;

@@ -31,7 +31,7 @@ const handlerLogin = async ({ ctx, params, router }) => {
       }
     }
     let admin = await sequelize.query(
-      `SELECT * FROM clients WHERE mail = '${ctx.session.login_email}' OR phone = '${ctx.session.login_phone}'`,
+      `SELECT * FROM collaborators WHERE mail = '${ctx.session.login_email}' OR phone = '${ctx.session.login_phone}'`,
       {
         type: QueryTypes.SELECT,
       }
@@ -55,7 +55,7 @@ const handlerLogin = async ({ ctx, params, router }) => {
       await ctx.reply(`Здравствуйте${user.fio ? ", " + user.fio : ""}`);
       await router.redirect("/client", ctx);
     } else if (admin) {
-      ctx.session.userId = admin.id;
+      ctx.session.adminId = admin.id;
       await router.redirect("/admin", ctx);
     } else {
       await ctx.reply("Неверные данные");

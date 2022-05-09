@@ -1,4 +1,6 @@
 const addUser = require("./addUser"),
 getUserData = require("./getUserData"),
-changeUserData = require("./changeUserData");
-module.exports = {addUser, getUserData, changeUserData}
+changeUserData = require("./changeUserData"),
+getUsers = require("./getUsers"),
+deleteUser = require("./deleteUser")
+module.exports = {addUser, getUserData, changeUserData, getUsers, deleteUser}

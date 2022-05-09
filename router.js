@@ -4,7 +4,8 @@ const controllers = require("./methods");
 const argon2 = require("argon2");
 const { sequelize } = require("./sequelize");
 const { QueryTypes } = require("sequelize");
-const validation = require("./assets/validation");
+const validation = require("./validation");
+const { parse } = require("./utils/parse");
 const registration_steps = [
   {
     title: "ogrn",
@@ -237,7 +238,7 @@ const login_routes = [
               }
             }
             let admin = await sequelize.query(
-              `SELECT * FROM clients WHERE mail = '${ctx.session.login_email}' OR phone = '${ctx.session.login_phone}'`,
+              `SELECT * FROM collaborators WHERE mail = '${ctx.session.login_email}' OR phone = '${ctx.session.login_phone}'`,
               {
                 type: QueryTypes.SELECT,
               }
@@ -261,7 +262,7 @@ const login_routes = [
               await ctx.reply(`Здравствуйте${user.fio ? ", " + user.fio : ""}`);
               await router.redirect("/client", ctx);
             } else if (admin) {
-              ctx.session.userId = admin.id;
+              ctx.session.adminId = admin.id;
               await router.redirect("/admin", ctx);
             } else {
               await ctx.reply("Неверные данные");
@@ -278,7 +279,122 @@ const admin_routes = [
     children: [
       {
         path: "",
-        action: async function ({ ctx, params, router }) {},
+        action: async function ({ ctx, params, router }) {
+          await ctx.reply("Чем могу помочь?", {
+            reply_markup: {
+              keyboard: [
+                [Markup.button.callback("Смотреть заявки")],
+                [Markup.button.callback("Рассылка")],
+                [Markup.button.callback("Просмотр клиентов")],
+                [Markup.button.callback("Выйти")],
+              ],
+            },
+          });
+        },
+      },
+      {
+        path: "/message",
+        action: async ({ ctx, router }) => {
+          const text = ctx.update.message.text;
+          if (text == "Смотреть заявки") {
+            await router.redirect("/admin/unverified", ctx);
+          }
+          if (text == "Просмотр клиентов") {
+            await router.redirect("/admin/clients", ctx);
+          }
+          if (text == "Выйти") {
+            delete ctx.session.adminId;
+            await router.redirect("/select-action", ctx);
+          }
+        },
+      },
+      {
+        path: "/unverified",
+        children: [
+          {
+            path: "",
+            action: async ({ ctx, router }) => {
+              const clients = await controllers.getUsers({ verified: false });
+              const keyboard = [[Markup.button.callback("Назад")]];
+              if (clients.length) {
+                keyboard.unshift(
+                  [Markup.button.callback("Внести клиента")],
+                  [Markup.button.callback("Удалить заявку")]
+                );
+              }
+              await ctx.reply(JSON.stringify(clients), {
+                reply_markup: {
+                  keyboard,
+                },
+              });
+            },
+          },
+          {
+            path: "/verify",
+            children: [
+              {
+                path: "",
+                action: async ({ ctx, router }) => {
+                  ctx.reply("Вводите данные в формате ключ: значение");
+                },
+              },
+              {
+                path: "/message",
+                action: async ({ ctx, router }) => {
+                  const data = parse(ctx.update.message.text);
+                  const user = await controllers.getUsers(data, false);
+                  if (user) {
+                    const updated = await controllers.changeUserData(
+                      { verified: true },
+                      user.id
+                    );
+                    await ctx.reply("Заявка одобрена.");
+                  } else {
+                    await ctx.reply("Заявка не найдена.");
+                  }
+                },
+              },
+            ],
+          },
+          {
+            path: "/delete",
+            children: [
+              {
+                path: "",
+                action: async ({ ctx, router }) => {
+                  ctx.reply("Вводите данные в формате ключ: значение");
+                },
+              },
+              {
+                path: "/message",
+                action: async ({ ctx, router }) => {
+                  const data = parse(ctx.update.message.text);
+                  const user = await controllers.deleteUser(data);
+                  if (user) {
+                    await ctx.reply("Заявка удалена.");
+                  } else {
+                    await ctx.reply("Заявка не найдена.");
+                  }
+                },
+              },
+            ],
+          },
+          {
+            path: "/message",
+            action: async ({ ctx, router }) => {
+              const text = ctx.update.message.text;
+              if (text == "Внести клиента") {
+                router.redirect("/admin/unverified/verify", ctx);
+              }
+              if (text == "Удалить заявку") {
+                router.redirect("/admin/unverified/delete", ctx);
+              }
+              if (text == "Назад") {
+                router.redirect("/admin", ctx);
+              }
+            },
+          },
+        ],
       },
     ],
   },
@@ -385,13 +501,9 @@ const client_routes = [
                     await router.redirect("/client", ctx);
                     return;
                   }
-                  const data = text
-                    .split(",")
-                    .map((part) =>
-                      part.split(":").map((_) => _.trim().toLowerCase())
-                    );
+                  const data = parse(text);
                   const client = await controllers.changeUserData(
-                    Object.fromEntries(data),
+                    data,
                     ctx.session.userId
                   );
                   console.log(client);
