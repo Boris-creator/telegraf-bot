@@ -1,6 +1,6 @@
 const { Client, Collaborator } = require("../sequelize.js");
 const argon2 = require("argon2");
-const rgxps = require("../validation")
+const rgxps = require("../assets/validation")
 async function validate(data) {
   if (data.inn == null && data.ogrn == null) {
     return false;

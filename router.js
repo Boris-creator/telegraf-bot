@@ -64,21 +64,21 @@ const register_routes = [
         path: "/:title/message",
         action: async function RegisterScene({ ctx, params, router }) {
           const stepIndex = registration_steps.findIndex(
-            (s) => s.title == params.title
+            (s) => s.title === params.title
           );
-          if (stepIndex == -1) {
+          if (stepIndex === -1) {
             return;
           }
           const answer = getMessage(ctx).text;
-          if (answer == "Отменить регистрацию") {
+          if (answer === "Отменить регистрацию") {
             await router.redirect("/form/register/cancel", ctx);
             return;
           }
-          if (answer == "Назад") {
+          if (answer === "Назад") {
             await router.redirect("/form/register/back", ctx);
             return;
           }
-          if (answer == "Пропустить") {
+          if (answer === "Пропустить") {
             await router.redirect("/form/register/omit", ctx);
             return;
           }
@@ -525,7 +525,7 @@ const client_routes = [
 const routes = [
   {
     path: "start",
-    action: async function StartScene({ ctx, params, router }) {
+    action: async ({ ctx, router }) => {
       await router.redirect(
         ctx.session.userId
           ? "/client"
